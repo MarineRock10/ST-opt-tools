@@ -114,14 +114,17 @@ if (optimizer.plan()) {
 
 ### Example Outputs
 
-**Figure 1**: A planned path with obstacle avoidance*
-![](doc/grid_map.png)
+**Figure 1**: Grid Map Visualization with ESDF  
+![](doc/grid_map.png)  
+*Visualization of the grid-based Euclidean Signed Distance Field (ESDF) showing obstacle boundaries (yellow), free space (blue gradient), and occupied space (red gradient).*
 
-**Figure 2**: Optimized smooth trajectory
-![](doc/astar.png)
+**Figure 2**: A* Path Planning Results  
+![](doc/astar.png)  
+*A-star algorithm path planning with obstacle avoidance. Blue points show the raw path, green points represent the optimized path after post-processing, and orange arrows indicate sampled states with orientation.*
 
-**Figure 3**: Performance comparison with baseline methods
-![](doc/opt.png)
+**Figure 3**: Optimized Trajectory with Spline Fitting  
+![](doc/opt.png)  
+*Final optimized trajectory using L-BFGS optimization integrated with SplineTrajectory.*
 
 ## 🛠️ Integration with SplineTrajectory
 
