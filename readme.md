@@ -106,8 +106,6 @@ if (optimizer.plan()) {
 - L-BFGS-based optimization with multiple constraints:
   - Collision avoidance
   - Velocity limits
-  - Dynamic feasibility
-  - Path following
 - Integration with SplineTrajectory for smooth output
 
 ## 📊 Results

@@ -23,7 +23,6 @@ struct TrajectoryParams {
     double rho_v = 10000;           // Velocity penalty weight
     double rho_collision = 100000;  // Collision penalty weight
     double rho_T = 100;             // Time penalty weight
-    double rho_path = 1.0;          // Path following penalty weight
     double max_v = 1.0;             // Maximum velocity
     double safe_threshold = 0.5;    // Safety distance threshold
     
