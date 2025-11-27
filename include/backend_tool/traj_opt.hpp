@@ -23,6 +23,7 @@ struct TrajectoryParams {
     double rho_v = 10000;           // Velocity penalty weight
     double rho_collision = 100000;  // Collision penalty weight
     double rho_T = 100;             // Time penalty weight
+    double rho_energy = 100;        // Energy (smoothness) penalty weight
     double max_v = 1.0;             // Maximum velocity
     double safe_threshold = 0.5;    // Safety distance threshold
     
@@ -240,19 +241,24 @@ private:
         Eigen::VectorXd gdTpos_constrain;
         calculateConstraintCostGrad(trajectory_, constrain_cost, gdCpos_constrain, gdTpos_constrain);
         
-        Eigen::MatrixXd gdCpos = gdCpos_constrain;
-        Eigen::VectorXd gdTpos = gdTpos_constrain;
-        Eigen::MatrixXd gradPpos_temp;
-        Eigen::MatrixXd gradPtail_temp;
-        Eigen::VectorXd gradTpos_temp;
-        calGradCTtoQT(gdCpos, gdTpos, gradPpos_temp, gradPtail_temp, gradTpos_temp);
-        gradPpos = gradPpos_temp;
+        Eigen::MatrixXd gradPpos_constrain;
+        Eigen::VectorXd gradTpos_constrain;
+        calGradCTtoQT(gdCpos_constrain, gdTpos_constrain, gradPpos_constrain, gradTpos_constrain);
+        
+        double energy = cubic_spline_.getEnergy();
+        double energy_cost = params_.rho_energy * energy;
+        
+        CubicSpline2D::MatrixType gradP_energy = cubic_spline_.getEnergyGradInnerP();
+        Eigen::VectorXd gradT_energy = cubic_spline_.getEnergyGradTimes();
+        
+        gradPpos = gradPpos_constrain + params_.rho_energy * gradP_energy.transpose();
+        Eigen::VectorXd gradTpos_total = gradTpos_constrain + params_.rho_energy * gradT_energy;
 
         double tau_cost = params_.rho_T * expC2(tau);
-        double grad_Tsum = params_.rho_T + gdTpos_constrain.sum() / piece_pos_;
+        double grad_Tsum = params_.rho_T + gradTpos_total.sum() / piece_pos_;
         grad_tau = grad_Tsum * getTtoTauGrad(tau);
 
-        cost = constrain_cost + tau_cost;
+        cost = constrain_cost + energy_cost + tau_cost;
         return cost;
     }
 
@@ -352,25 +358,23 @@ private:
             }
         }
 
-        std::cout << "Cost breakdown - Vel: " << v_cost << ", Coll: " << occ_cost 
-                  << ", Path: " << path_cost << std::endl;
+        std::cout << "Cost breakdown - Vel: " << v_cost << ", Coll: " << occ_cost << std::endl;
     }
 
     void calGradCTtoQT(
         const Eigen::MatrixXd& gdCpos,
         const Eigen::VectorXd& gdTpos,
         Eigen::MatrixXd& gradPpos,
-        Eigen::MatrixXd& gradPtail,
         Eigen::VectorXd& gradTpos_out)
     {
-        const int N = piece_pos_;
-        gradPpos.resize(2, N - 1);
-        gradPtail.setZero();
-        gradTpos_out = gdTpos;
+        CubicSpline2D::MatrixType gdC_typed = gdCpos;
+        CubicSpline2D::MatrixType gradByPoints;
+        Eigen::VectorXd gradByTimes;
         
-        for (int i = 0; i < N - 1; ++i) {
-            gradPpos.col(i) = gdCpos.block(i * 4, 0, 1, 2).transpose();
-        }
+        cubic_spline_.propagateGrad(gdC_typed, gdTpos, gradByPoints, gradByTimes);
+        
+        gradPpos = gradByPoints.transpose();
+        gradTpos_out = gradByTimes;
         
         std::cout << "Gradient norm - Ppos: " << gradPpos.norm() 
                 << ", Tpos: " << gradTpos_out.norm() << std::endl;
@@ -399,8 +403,8 @@ private:
         bc.start_velocity = initPos.col(1);
         bc.end_velocity = endPos.col(1);
 
-        CubicSpline2D cubic_traj(times, waypoints, bc);
-        trajectory_ = cubic_traj.getTrajectory();
+        cubic_spline_.update(times, waypoints, bc);
+        trajectory_ = cubic_spline_.getTrajectory();
     }
 
     double calculatePathLength(const std::vector<Eigen::Vector2d>& path) {
@@ -441,6 +445,7 @@ private:
     MatrixXd init_pos_;
     MatrixXd end_pos_;
     PPoly2D trajectory_;
+    CubicSpline2D cubic_spline_; 
     int current_segment_ = 0;
 };
 
