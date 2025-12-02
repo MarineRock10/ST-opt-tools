@@ -121,7 +121,7 @@ if (optimizer.plan()) {
 *A-star algorithm path planning with obstacle avoidance. Blue points show the raw path, green points represent the optimized path after post-processing, and orange arrows indicate sampled states with orientation.*
 
 **Figure 3**: Optimized Trajectory with Spline Fitting  
-![](doc/opt.png)  
+![](doc/opt_new.png)  
 *Final optimized trajectory using L-BFGS optimization integrated with SplineTrajectory.*
 
 ## 🛠️ Integration with SplineTrajectory
